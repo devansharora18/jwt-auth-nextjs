@@ -10,6 +10,7 @@ import { loginUser, refreshAccessToken } from "@/app/store/slice";
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
@@ -27,15 +28,20 @@ const Login = () => {
     e.preventDefault();
 
     try {
+      setLoading(true);
       const resultAction = await dispatch(loginUser({ email, password }));
 
       if (loginUser.fulfilled.match(resultAction)) {
+        setLoading(false);
         router.push("/home");
       } else {
         console.error("Login failed:", resultAction.payload);
+        setLoading(false);
       }
+
     } catch (error) {
       console.error("Error logging in:", error);
+      setLoading(false);
     }
   };
 
@@ -59,7 +65,7 @@ const Login = () => {
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <button type="submit">Login</button>
+        <button type="submit">{loading ? "loading" : "Login"}</button>
       </form>
 
       <Link href="/register">Create New Account</Link>

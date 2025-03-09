@@ -10,6 +10,7 @@ import { registerUser, refreshAccessToken } from "@/app/store/slice";
 const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
@@ -27,15 +28,19 @@ const Register = () => {
     e.preventDefault();
 
     try {
+	  setLoading(true);
       const resultAction = await dispatch(registerUser({ email, password }));
 
       if (registerUser.fulfilled.match(resultAction)) {
+		setLoading(false);
         router.push("/login");
       } else {
         console.error("Registration failed:", resultAction.payload);
+		setLoading(false);
       }
     } catch (error) {
       console.error("Error registering:", error);
+	  setLoading(false);
     }
   };
 
@@ -59,7 +64,7 @@ const Register = () => {
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <button type="submit">Register</button>
+        <button type="submit">{loading ? "loading" : "Register"}</button>
       </form>
 
       <Link href="/login">Already have an account? Login</Link>

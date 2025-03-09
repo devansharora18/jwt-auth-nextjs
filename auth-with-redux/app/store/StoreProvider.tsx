@@ -14,7 +14,7 @@ const TokenAutoRefresher = () => {
 
     const refreshInterval = setInterval(() => {
       dispatch(refreshAccessToken()).unwrap().catch(() => {});
-    }, 10 * 60 * 1000); // Refresh every 10 minutes
+    }, 10 * 60 * 1000);
 
     return () => clearInterval(refreshInterval);
   }, [authToken, dispatch]);
@@ -24,10 +24,13 @@ const TokenAutoRefresher = () => {
 
 const AuthInitializer = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const authToken = useSelector((state: RootState) => state.auth.authToken);
 
   useEffect(() => {
+    if (authToken) return;
+
     dispatch(refreshAccessToken()).unwrap().catch(() => {});
-  }, [dispatch]);
+  }, [authToken, dispatch]);
 
   return null;
 };

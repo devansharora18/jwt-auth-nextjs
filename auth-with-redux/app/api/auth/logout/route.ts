@@ -1,15 +1,18 @@
 import { NextResponse } from "next/server";
-import connectToDatabase from "@/app/lib/mongodb";
-import User from "@/app/models/User";
 
-export async function POST(req: Request) {
+export async function POST() {
   try {
-    const { userId } = await req.json();
-    await connectToDatabase();
+    const response = NextResponse.json({ message: "Logged out successfully" }, { status: 200 });
 
-    await User.findByIdAndUpdate(userId, { refreshToken: null });
+    response.cookies.set("refreshToken", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: 0,
+    });
 
-    return NextResponse.json({ message: "Logged out successfully" }, { status: 200 });
+    return response;
   } catch (error) {
     return NextResponse.json({ message: "Server error" }, { status: 500 });
   }

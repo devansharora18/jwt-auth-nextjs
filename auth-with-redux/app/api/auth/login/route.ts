@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/app/lib/mongodb";
 import User from "@/app/models/User";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json();
     await connectToDatabase();
@@ -21,10 +21,18 @@ export async function POST(req: Request) {
 
     const authToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "15m" });
     const refreshToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "30d" });
-    user.refreshToken = refreshToken;
-    await user.save();
 
-    return NextResponse.json({ authToken, refreshToken, email }, { status: 200 });
+    // Set the refresh token in an HTTP-only, Secure cookie
+    const response = NextResponse.json({ authToken, email }, { status: 200 });
+    response.cookies.set("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: 30 * 24 * 60 * 60, // 30 days
+    });
+
+    return response;
   } catch (error) {
     return NextResponse.json({ message: "Server error" }, { status: 500 });
   }

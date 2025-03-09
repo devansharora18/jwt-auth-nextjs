@@ -1,22 +1,12 @@
-import { NextResponse } from "next/server";
-import connectToDatabase from "@/app/lib/mongodb";
-import User from "@/app/models/User";
+import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 
-export async function POST(req: Request) {
-  await connectToDatabase();
-
+export async function POST(req: NextRequest) {
   try {
-    const { refreshToken } = await req.json();
+    const refreshToken = req.cookies.get("refreshToken")?.value;
 
     if (!refreshToken) {
       return NextResponse.json({ message: "No refresh token provided" }, { status: 400 });
-    }
-
-    const user = await User.findOne({ refreshToken });
-
-    if (!user) {
-      return NextResponse.json({ message: "Invalid refresh token" }, { status: 403 });
     }
 
     if (!process.env.JWT_SECRET) {
@@ -24,15 +14,15 @@ export async function POST(req: Request) {
     }
 
     try {
-      jwt.verify(refreshToken, process.env.JWT_SECRET);
+      const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET) as { userId: string };
 
-      const newAuthToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "15m" });
+      const newAuthToken = jwt.sign({ userId: decoded.userId }, process.env.JWT_SECRET, { expiresIn: "15m" });
 
-      return NextResponse.json({ authToken: newAuthToken });
+      return NextResponse.json({ authToken: newAuthToken }, { status: 200 });
     } catch {
-      return NextResponse.json({ message: "Refresh token expired" }, { status: 401 });
+      return NextResponse.json({ message: "Invalid or expired refresh token" }, { status: 401 });
     }
   } catch (error) {
-    return NextResponse.json({ message: "Invalid request" }, { status: 400 });
+    return NextResponse.json({ message: "Server error" }, { status: 500 });
   }
 }

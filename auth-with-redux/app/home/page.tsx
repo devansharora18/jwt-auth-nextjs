@@ -2,17 +2,31 @@
 
 import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { RootState } from "@/app/store/store";
+import { RootState, AppDispatch } from "@/app/store/store";
 import { logout, refreshAccessToken } from "@/app/store/slice";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 
 const Home = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
-  const { authToken, email } = useSelector((state: RootState) => state.auth);
+  const { authToken } = useSelector((state: RootState) => state.auth);
 
-  const handleLogout = () => {
+  useEffect(() => {
+    if (!authToken) {
+      dispatch(refreshAccessToken()).unwrap().catch(() => {
+        router.push("/login");
+      });
+    }
+  }, [authToken, dispatch, router]);
+
+  const handleLogout = async () => {
+    try {
+      await axios.post("/api/auth/logout");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
     dispatch(logout());
     router.push("/login");
   };
@@ -24,9 +38,7 @@ const Home = () => {
       {authToken ? (
         <div>
           <h3>User Details:</h3>
-          <p><strong>Email:</strong> {email}</p>
           <p><strong>Access Token:</strong> {authToken}</p>
-          {/* <p><strong>Refresh Token:</strong> {refreshToken}</p> */}
           <button onClick={handleLogout}>Logout</button>
         </div>
       ) : (

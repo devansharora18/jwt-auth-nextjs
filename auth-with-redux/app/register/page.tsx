@@ -1,17 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { AppDispatch, RootState } from "@/app/store/store";
-import { registerUser } from "@/app/store/slice";
+import { registerUser, refreshAccessToken } from "@/app/store/slice";
 
 const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+
+  const authToken = useSelector((state: RootState) => state.auth.authToken);
+
+  useEffect(() => {
+    if (authToken) {
+      dispatch(refreshAccessToken()).unwrap()
+        .then(() => router.push("/home"))
+        .catch(() => {});
+    }
+  }, [authToken, dispatch, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
